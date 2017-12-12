@@ -1,5 +1,7 @@
-from flask import Flask, render_template, redirect, request, url_for
+from flask_bootstrap import Bootstrap
+from flask import Flask
 
 app = Flask(__name__)
+Bootstrap(app)
 
 from app import main
