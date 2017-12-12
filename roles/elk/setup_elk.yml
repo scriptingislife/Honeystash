@@ -1,0 +1,167 @@
+####################################################################
+# Install Python module for Ansible
+####################################################################
+- pip:
+    name: pexpect
+    version: 3.3
+
+####################################################################
+# Install/Setup Elasticsearch
+####################################################################
+- name: Add Elastic repo
+  rpm_key:
+    state: present
+    key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+- yum_repository:
+    name: elastic.co
+    description: Elasticsearch repository for 6.x packages
+    baseurl: https://artifacts.elastic.co/packages/6.x/yum
+    enabled: yes
+    gpgcheck: yes
+    gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Install/Setup Elasticsearch
+  yum:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - elasticsearch
+    - java
+    - curl
+
+- name: Start Elasticsearch service
+  service:
+    name: elasticsearch
+    state: started
+    enabled: yes
+- pause:
+    seconds: 60
+
+####################################################################
+# Install/Setup Logstash
+####################################################################
+- name: Install/Setup Logstash
+  yum:
+    name: logstash
+    state: latest
+
+- name: Copy Logstash configs
+  template:
+    src: conf/logstash/02-beats-input.conf
+    dest: /etc/logstash/conf.d/02-beats-input.conf
+- template:
+    src: conf/logstash/11-honeypot-filter.conf
+    dest: /etc/logstash/conf.d/11-honeypot-filter.conf
+- template:
+    src: conf/logstash/30-elasticsearch-output.conf
+    dest: /etc/logstash/conf.d/30-elasticsearch-output.conf
+
+- name: Create SSL directory for Logstash
+  file:
+    path: /etc/logstash/ssl
+    owner: root
+    group: root
+    state: directory
+- file:
+    path: /etc/logstash/ssl
+    state: directory
+    mode: 0755
+
+- name: Create OpenSSL custom cert for Logstash
+  stat:
+    path: /etc/logstash/ssl/{{ logstash_cert_name }}.crt
+  register: stat_dhparam
+- name: Create OpenSSL custom cert for Wazuh
+  shell: openssl req -new -nodes -x509 -days 3650 -subj "/C={{ logstash_cert_country }}/ST={{ logstash_cert_state }}/L={{ logstash_cert_local }}/O={{ logstash_cert_org }}/CN={{ logstash_cert_common_name }}" -keyout /etc/logstash/ssl/{{ logstash_cert_name }}.key -out /etc/logstash/ssl/{{ logstash_cert_name }}.crt
+  when: stat_dhparam.stat.exists == False
+
+- name: Start Logstash
+  service:
+    name: logstash
+    state: started
+    enabled: yes
+
+####################################################################
+# Install/Setup Nginx
+####################################################################
+- name: Install/Setup Nginx
+  package:
+    name: '{{ item }}'
+    state: installed
+  with_items:
+    - nginx
+    - httpd-tools
+
+- name: Backup NGINX config
+  shell: cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+
+- name: Copy Nginx config
+  template:
+    src: conf/nginx/nginx.conf
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Create SSL directory for NGINX
+  file:
+    path: /etc/nginx/ssl
+    owner: root
+    group: root
+    state: directory
+- file:
+    path: /etc/nginx/ssl
+    state: directory
+    mode: 0755
+
+- name: Generate DH key
+  stat:
+    path: /etc/nginx/ssl/dhparam.pem
+  register: stat_dhparam
+- shell: openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048
+  when: stat_dhparam.stat.exists == False
+
+- name: Create OpenSSL custom cert for NGINX
+  shell: openssl req -new -nodes -x509 -days 3650 -subj "/C={{ nginx_cert_country }}/ST={{ nginx_cert_state }}/L={{ nginx_cert_local }}/O={{ nginx_cert_org }}/CN={{ nginx_cert_common_name }}" -keyout /etc/nginx/ssl/{{ nginx_cert_name }}.key -out /etc/nginx/ssl/{{ nginx_cert_name }}.crt
+  when: stat_dhparam.stat.exists == False
+
+####################################################################
+# Install/Setup Kibana
+####################################################################
+- name: Install/Setup Kibana
+  yum:
+    name: kibana
+    state: latest
+
+- name: Copy nginx_kibana conf
+  template:
+    src: conf/nginx/nginx_kibana.conf
+    dest: /etc/nginx/conf.d/nginx_kibana.conf
+
+- name: Create Kibana webGUI user
+  expect:
+    command: 'htpasswd -c /etc/nginx/htpasswd.users {{ kibana_user }}'
+    responses:
+      (?i)password: "{{ kibana_pass }}"
+
+- name: Restart Kibana
+  service:
+    name: kibana
+    state: restarted
+    enabled: yes
+
+- name: Restart NGINX
+  service:
+    name: nginx
+    state: restarted
+    enabled: yes
+
+####################################################################
+#  Slack notification
+####################################################################
+- name: Send slack notification when done
+  slack:
+    token: "{{ slack_token }}"
+    msg: '{{ ansible_nodename }}:{{ ansible_default_ipv4.address }} - Finished ELK setup'
+    channel: "{{ slack_channel }}"

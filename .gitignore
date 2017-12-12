@@ -1,0 +1,4 @@
+env/
+*.retry
+*.pyc
+group_vars/all

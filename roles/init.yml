@@ -1,0 +1,54 @@
+####################################################################
+# Set hostname
+####################################################################
+- name: Set hostname
+  command: hostname {{ hostname }}.{{ base_domain }}
+- command: hostnamectl set-hostname {{ hostname }}.{{ base_domain }}
+
+####################################################################
+# Setup NTP
+####################################################################
+- name: Setup NTP time sync
+  package: name='{{ item }}' state=installed
+  with_items:
+    - ntpdate
+    - ntp-doc
+- service:
+    name: ntpd
+    state: started
+    enabled: yes
+
+####################################################################
+# Update system
+####################################################################
+- name: Update system and add RHEL
+  yum_repository:
+    name: epel
+    description: EPEL YUM repo
+    baseurl: https://download.fedoraproject.org/pub/epel/$releasever/$basearch/
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+- yum:
+    name: '*'
+    state: latest
+- package:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - python-pip
+
+####################################################################
+# Set SElinux to permissive mode
+####################################################################
+- name: Set SELinux to permissive
+  selinux:
+    policy: targeted
+    state: '{{ selinux_state }}'
+
+####################################################################
+#  Slack notification
+####################################################################
+- name: Send slack notification when done
+  slack:
+    token: "{{ slack_token }}"
+    msg: '{{ ansible_nodename }}:{{ ansible_default_ipv4.address }} - Finished initial setup'
+    channel: "{{ slack_channel }}"
