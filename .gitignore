@@ -2,3 +2,4 @@ env/
 *.retry
 *.pyc
 group_vars/all
+.DS_Store

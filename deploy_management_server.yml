@@ -1,8 +1,0 @@
-- hosts: management
-  tasks:
-    - name: Initial setup
-      import_tasks: roles/init.yml
-    - name: Install/Setup ELK stack
-      import_tasks: roles/elk/setup_elk.yml
-    - name: Install/Setup firewall
-      import_tasks: roles/firewall/setup_firewall.yml
