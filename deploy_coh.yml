@@ -3,5 +3,6 @@
   become_user: root
   tasks:
     - include_vars: group_vars/flink
+    - include_vars: group_vars/elk
     - import_tasks: roles/init.yml
-    - import_tasks: roles/server/setup_flink.yml
+    - import_tasks: roles/server/setup_elk_stack.yml

@@ -3,4 +3,6 @@ env/
 *.pyc
 group_vars/all
 group_vars/flink
+group_vars/api
+group_vars/elk
 .DS_Store

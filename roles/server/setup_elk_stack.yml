@@ -1,0 +1,190 @@
+####################################################################
+# Install software for ELK
+####################################################################
+- name: Install software
+  package:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - apt-transport-https
+    - openjdk-8-jre-headless
+    - nginx
+    - python3-pip
+
+####################################################################
+# Install/Setup Elasticsearch
+####################################################################
+- name: Add Elastic GPG key
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add Elastic repo
+  apt_repository:
+    repo: deb https://artifacts.elastic.co/packages/6.x/apt stable main
+    state: present
+
+- name: Install/Setup Elasticsearch
+  package:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - curl
+    - elasticsearch
+
+- name: Rename Elasticsearch cluster name
+  lineinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    regexp: '^cluster.name:'
+    line: 'cluster.name: {{ elk_cluster_name }}'
+
+- service:
+    name: elasticsearch
+    state: started
+    enabled: yes
+
+####################################################################
+# Install/Setup Logstash
+####################################################################
+- name: Install/Setup Logstash
+  package:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - logstash
+
+- name: Create /etc/logstash/ssl directory
+  file:
+    path: /etc/logstash/ssl
+    owner: root
+    group: root
+    state: directory
+
+- name: Stat logstash.crt
+  stat:
+    path: /etc/logstash/ssl/logstash.crt
+  register: stat_cert
+- name: Generate cert
+  shell: openssl req -new -nodes -x509 -days 3650 -subj "/C={{ cert_country }}/ST={{ cert_state }}/L={{ cert_local }}/O={{ cert_org }}/CN={{ inventory_hostname }}.{{ base_domain }}" -keyout /etc/logstash/ssl/logstash.key -out /etc/logstash/ssl/logstash.crt
+  when: stat_cert.stat.exists == False
+
+- name: Copy Logstash input
+  template:
+    src: conf/logstash/02-input-beats.conf
+    dest: /etc/logstash/conf.d/02-input-beats.conf
+
+- name: Copy Logstash output
+  template:
+    src: conf/logstash/30-elasticsearch-output.conf
+    dest: /etc/logstash/conf.d/30-elasticsearch-output.conf
+
+- name: Restart and enable Logstash service
+  service:
+    name: logstash
+    state: restarted
+    enabled: yes
+
+####################################################################
+# Install/Setup Kibana
+####################################################################
+- name: Install/Setup Kibana
+  package:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - kibana
+    - apache2-utils
+
+- name: Restart and enable Kibana service
+  service:
+    name: kibana
+    state: restarted
+    enabled: yes
+
+- name: Install pexpect
+  pip:
+    name: pexpect
+    executable: pip3
+
+- name: Stat .htpasswd for Kibana
+  stat:
+    path: /etc/nginx/htpasswd.users
+  register: stat_htpasswd
+
+- name: Create Kibana webGUI user
+  expect:
+    command: 'htpasswd -c /etc/nginx/htpasswd.users {{ kibana_user }}'
+    responses:
+      (?i)password: "{{ kibana_pass }}"
+  when: stat_htpasswd.stat.exists == False
+
+####################################################################
+# Install/Setup Nginx
+####################################################################
+- name: Install/Setup Nginx
+  package:
+    name: '{{ item }}'
+    state: installed
+  with_items:
+    - nginx
+
+- name: Backup NGINX config
+  copy:
+    src: /etc/nginx/nginx.conf
+    dest: /etc/nginx/nginx.conf.bak
+    remote_src: yes
+
+- name: Copy Nginx config
+  template:
+    src: conf/nginx/nginx_ubuntu.conf
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0400'
+
+- name: Create SSL directory
+  file:
+    path: /etc/nginx/ssl
+    owner: root
+    group: root
+    state: directory
+
+- name: Generate DH
+  stat:
+    path: /etc/ssl/certs/dhparam.pem
+  register: stat_dhparam
+- shell: openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
+  when: stat_dhparam.stat.exists == False
+
+- name: Generate cert
+  stat:
+    path: /etc/nginx/ssl/dhparam.pem
+  register: stat_dhparam
+- shell: openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048
+  when: stat_dhparam.stat.exists == False
+- shell: openssl req -new -nodes -x509 -days 3650 -subj "/C={{ cert_country }}/ST={{ cert_state }}/L={{ cert_local }}/O={{ cert_org }}/CN={{ base_domain }}" -keyout /etc/nginx/ssl/{{ base_domain }}.key -out /etc/nginx/ssl/{{ base_domain }}.crt
+  when: stat_dhparam.stat.exists == False
+
+- name: Copy NGINX kibana config
+  template:
+    src: conf/nginx/nginx_kibana.conf
+    dest: /etc/nginx/conf.d/nginx_kibana.conf
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Restart NGINX
+  service:
+    name: nginx
+    state: restarted
+    enabled: yes
+
+####################################################################
+#  Slack notification
+####################################################################
+- name: Send slack notification when done
+  slack:
+    token: "{{ slack_token }}"
+    msg: '{{ ansible_nodename }}:{{ ansible_default_ipv4.address }} - Finished setting up ELK stack - {{ ansible_nodename }}'
+    channel: "{{ slack_channel }}"
+  when: slack_token != None    
