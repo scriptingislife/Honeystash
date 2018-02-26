@@ -2,4 +2,5 @@ env/
 *.retry
 *.pyc
 group_vars/all
+group_vars/flink
 .DS_Store

@@ -1,0 +1,70 @@
+####################################################################
+# Install Java
+####################################################################
+- name: Install Java
+  package:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - apt-transport-https
+    - openjdk-8-jre-headless
+
+####################################################################
+# Setup flink user
+####################################################################
+- name: Create flink group
+  group:
+    name: '{{ flink_user }}'
+    state: present
+
+- name: Create flink user
+  user:
+    name: '{{ flink_user }}'
+    shell: /usr/sbin/nologin
+    group: '{{ flink_user }}'
+       
+####################################################################
+# Install/Setup Flink
+####################################################################
+- name: Create directory for Flink
+  file:
+    path: '{{ flink_dir }}'
+    state: directory
+    owner: '{{ flink_user }}'
+    group: '{{ flink_user }}'
+
+- name: Stat Flink download
+  stat:
+    path: /opt/flink/bin/start-local.sh
+  register: stat_flink
+
+- name: Download Flink and extract
+  unarchive:
+    src: '{{ flink_url }}'
+    dest: '{{ flink_dir }}'
+    remote_src: yes
+    owner: '{{ flink_user }}'
+    group: '{{ flink_user }}'
+    extra_opts: [--strip-components=1]
+  when: stat_flink.stat.exists == False
+
+- name: Copy systemD file
+  template:
+    src: conf/flink/flink.service
+    dest: /etc/systemd/system/flink.service
+
+- name: Start Flink service
+  service:
+    name: flink
+    state: restarted
+    enabled: yes
+
+####################################################################
+#  Slack notification
+####################################################################
+- name: Send slack notification when done
+  slack:
+    token: "{{ slack_token }}"
+    msg: '{{ ansible_nodename }}:{{ ansible_default_ipv4.address }} - Finished setting up Flink - {{ ansible_nodename }}'
+    channel: "{{ slack_channel }}"
+  when: slack_token != None
