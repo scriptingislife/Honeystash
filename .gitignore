@@ -1,8 +1,8 @@
 env/
 *.retry
 *.pyc
-group_vars/all
 group_vars/flink
 group_vars/api
 group_vars/elk
+group_vars/all
 .DS_Store

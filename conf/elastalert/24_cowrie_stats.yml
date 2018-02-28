@@ -1,0 +1,13 @@
+es_host: localhost
+es_port: 9200
+name: "24 Cowrie stats"
+index: cowrie-*
+
+filter:
+- terms:
+    event_data.CommandLine: ["PLACEHOLDER"]
+
+type: any
+alert:
+- slack
+  slack_webhook_url: "SLACK_WEB_HOOK"

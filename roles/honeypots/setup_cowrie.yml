@@ -1,0 +1,49 @@
+####################################################################
+# Setup Cowrie docker container
+####################################################################
+- name: Create Cowrie directory
+  file:
+    path: /srv/cowrie
+    state: directory
+
+- name: Copy Cowrie config
+  template:
+    src: conf/cowrie/cowrie.cfg
+    dest: /srv/cowrie/cowrie.cfg
+
+- name: Create Cowrie docker container
+  docker_container:
+    name: cowrie
+    image: wonderfall/cowrie
+    ports:
+    - "22:2222"
+    volumes:
+      - /srv/cowrie/dl:/cowrie/dl:rw
+      - /srv/cowrie/log:/cowrie/log:rw
+      - /srv/cowrie/cowrie.cfg:/cowrie/cowrie.cfg
+    restart_policy: always
+    recreate: yes
+
+####################################################################
+# Setup Filebeat logging
+####################################################################
+- name: Copy Filebeat config
+  template:
+    src: conf/filebeat/cowrie.yml
+    dest: /etc/filebeat/conf.d/cowrie.yml
+
+- name: Restart Filebeat
+  service:
+    name: filebeat
+    state: restarted
+    enabled: yes
+
+####################################################################
+#  Slack notification
+####################################################################
+- name: Send slack notification when done
+  slack:
+    token: "{{ slack_token }}"
+    msg: '{{ ansible_nodename }}:{{ ansible_default_ipv4.address }} - Finished setting up Filebeat - {{ ansible_nodename }}'
+    channel: "{{ slack_channel }}"
+  when: slack_token != None    

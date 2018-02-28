@@ -1,0 +1,49 @@
+####################################################################
+# Install/Setup Docker for CentOS
+####################################################################
+- name: Ensure old versions of Docker are not installed.
+  package:
+    name: '{{ item }}'
+    state: absent
+  with_items:
+    - docker
+    - docker-common
+    - docker-engine
+
+- name: Add Docker GPG key.
+  rpm_key:
+    key: https://download.docker.com/linux/centos/gpg
+    state: present
+
+- name: Add Docker repository.
+  get_url:
+    url: "https://download.docker.com/linux/centos/docker-ce.repo"
+    dest: '/etc/yum.repos.d/docker-ce.repo'
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Install Docker
+  package: 
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - docker-ce
+    - docker-python
+
+
+- name: Ensure Docker is started and enabled at boot
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+####################################################################
+#  Slack notification
+####################################################################
+- name: Send slack notification when done
+  slack:
+    token: "{{ slack_token }}"
+    msg: '{{ ansible_nodename }}:{{ ansible_default_ipv4.address }} - Finished setting up Docker - {{ ansible_nodename }}'
+    channel: "{{ slack_channel }}"
+  when: slack_token != None  

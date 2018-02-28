@@ -1,0 +1,5 @@
+- paths:
+    - /srv/cowrie/log/*.json
+  fields:
+    type: honeypot
+    honeypot: cowrie

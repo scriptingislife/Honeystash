@@ -72,12 +72,14 @@
   template:
     src: conf/logstash/02-input-beats.conf
     dest: /etc/logstash/conf.d/02-input-beats.conf
+    mode: 0644
 
 - name: Copy Logstash output
   template:
     src: conf/logstash/30-elasticsearch-output.conf
     dest: /etc/logstash/conf.d/30-elasticsearch-output.conf
-
+    mode: 0644
+    
 - name: Restart and enable Logstash service
   service:
     name: logstash
@@ -171,13 +173,69 @@
     dest: /etc/nginx/conf.d/nginx_kibana.conf
     owner: root
     group: root
-    mode: '0600'
+    mode: '0400'
 
 - name: Restart NGINX
   service:
     name: nginx
     state: restarted
     enabled: yes
+
+####################################################################
+# Install/Setup Elastalert
+####################################################################
+- name: Create /etc/elastalert
+  file:
+    path: '{{ item }}'
+    state: directory
+  with_items:
+    - /etc/elastalert
+    - /etc/elastalert/templates
+    - /etc/elastalert/alert_rules
+
+- name: Pull Elastalert repo
+  git:
+    url: https://github.com/Yelp/elastalert.git
+    dest: /etc/elastalert
+
+- name: Install elastalert
+  pip: 
+    name: elastalert
+    executable: pip3
+    chdir: /etc/elastalert    
+  with_items:
+    -  elastalert
+    - elasticsearch>=5.0.0
+
+- name: Install elastalert
+  pip: 
+    requirements: requirements.txt
+    executable: pip3
+    chdir: /etc/elastalert    
+
+- name: Create templates directory
+
+- name: Install software for Elastalert
+  package:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - git 
+    - software-properties-common 
+    - python-dev 
+    - libffi-dev 
+    - libssl-dev
+
+
+
+- name: python setup.py elastalert
+  shell: python setup.py install
+  args:
+    chdir: /opt/elastalert    
+
+- name: Install python-elasticsearch
+  pip:
+    name: elasticsearch>=5.0.0
 
 ####################################################################
 #  Slack notification
