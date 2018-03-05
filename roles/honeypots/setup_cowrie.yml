@@ -20,7 +20,7 @@
     volumes:
       - /srv/cowrie/dl:/cowrie/dl:rw
       - /srv/cowrie/log:/cowrie/log:rw
-      - /srv/cowrie/cowrie.cfg:/cowrie/cowrie.cfg
+      - /srv/cowrie/cowrie.cfg:/cowrie/cowrie.cfg:ro
     restart_policy: always
     recreate: yes
 

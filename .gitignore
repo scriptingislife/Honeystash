@@ -6,3 +6,4 @@ group_vars/api
 group_vars/elk
 group_vars/all
 .DS_Store
+hosts

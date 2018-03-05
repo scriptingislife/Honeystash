@@ -2,12 +2,16 @@
   become: yes
   become_user: root
   tasks:
-#    - import_tasks: roles/honeypots/setup_docker_centos.yml
-#      when: ansible_os_family == 'RedHat'
-    #- import_tasks: roles/honeypots/setup_docker_ubuntu.yml
-    #  when: ansible_os_family == 'Debian'
-#    - import_tasks: roles/honeypots/setup_filebeat_centos.yml
-#      when: ansible_os_family == 'RedHat'
+    - import_tasks: roles/honeypots/setup_docker_centos.yml
+      when: ansible_os_family == 'RedHat'
+    - import_tasks: roles/honeypots/setup_docker_ubuntu.yml
+      when: ansible_os_family == 'Debian'
+
+    - import_tasks: roles/honeypots/setup_filebeat_centos.yml
+      when: ansible_os_family == 'RedHat'
+    - import_tasks: roles/honeypots/setup_filebeat_ubuntu.yml
+      when: ansible_os_family == 'Debian'
+
     - import_tasks: roles/honeypots/setup_cowrie.yml
     
     

@@ -40,7 +40,7 @@
     state: directory
 
 - name: Get SSL cert
-  shell: 'openssl s_client -showcerts -connect {{ coh_hostname }}{{ base_domain }}:5044 </dev/null 2> /dev/null|openssl x509 -outform PEM > /etc/filebeat/ssl/logstash.cert'
+  shell: 'openssl s_client -showcerts -connect {{ coh_hostname }}.{{ base_domain }}:5044 </dev/null 2> /dev/null|openssl x509 -outform PEM > /etc/filebeat/ssl/logstash.cert'
 
 - name: Copy Filebeat conf
   template:
@@ -48,7 +48,7 @@
     dest: /etc/filebeat/filebeat.yml
     mode: 0400
 
-- name: Restart and enable Logstash service
+- name: Restart and enable Filebeat service
   service:
     name: filebeat
     state: restarted
