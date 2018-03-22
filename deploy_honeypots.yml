@@ -2,16 +2,23 @@
   become: yes
   become_user: root
   tasks:
-    - import_tasks: roles/honeypots/setup_docker_centos.yml
-      when: ansible_os_family == 'RedHat'
-    - import_tasks: roles/honeypots/setup_docker_ubuntu.yml
-      when: ansible_os_family == 'Debian'
+    # Install Docker
+#    - import_tasks: roles/honeypots/setup_docker_centos.yml
+#      when: ansible_os_family == 'RedHat'
+#    - import_tasks: roles/honeypots/setup_docker_ubuntu.yml
+#      when: ansible_os_family == 'Debian'
 
-    - import_tasks: roles/honeypots/setup_filebeat_centos.yml
-      when: ansible_os_family == 'RedHat'
-    - import_tasks: roles/honeypots/setup_filebeat_ubuntu.yml
-      when: ansible_os_family == 'Debian'
+    # Install Filebeat for logs
+#    - import_tasks: roles/honeypots/setup_filebeat_centos.yml
+#      when: ansible_os_family == 'RedHat'
+#    - import_tasks: roles/honeypots/setup_filebeat_ubuntu.yml
+#      when: ansible_os_family == 'Debian'
 
-    - import_tasks: roles/honeypots/setup_cowrie.yml
+    # Install Rsync
+    - include_vars: group_vars/rsync
+    - import_tasks: roles/honeypots/setup_rsync.yml
+
+    # Install cowrie
+#    - import_tasks: roles/honeypots/setup_cowrie.yml
     
     

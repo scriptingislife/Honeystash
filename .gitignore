@@ -5,5 +5,7 @@ group_vars/flink
 group_vars/api
 group_vars/elk
 group_vars/all
+group_vars/rsync
+conf/ssh/*
 .DS_Store
 hosts

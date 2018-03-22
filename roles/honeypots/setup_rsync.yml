@@ -1,5 +1,5 @@
 ####################################################################
-# Install/setup rsysnc + rssh
+# Install/setup rsysnc
 ####################################################################
 - name: Install software
   package:
@@ -8,37 +8,43 @@
   with_items:
     - rsync
     - rssh
-  
-- name: Add rssh user
+    
+- name: Add rsync user
   user:
     name: '{{ rsync_user }}'
     shell: /usr/bin/rssh
     comment: 'Rsync user for honeypots'
 
-####################################################################
-# Create malware directory
-####################################################################
-- name: Create malware chroot directory
-  file:
-    path: '{{ rsync_chroot }}'
-    state: directory
-    owner: '{{ rsync_user }}'
-    group: '{{ rsync_user }}'
-    mode: '0400'
+- name: Copy rssh config
+  template:
+    src: conf/rsync/rssh_client.conf
+    dest: /etc/rssh.conf
 
 ####################################################################
-# Generate SSH keys
+# Install/setup rsysnc
 ####################################################################
+- name: Create .ssh directory
+  file:
+    path: /home/{{ rsync_user }}/.ssh
+    owner: '{{ rsync_user }}'
+    group: '{{ rsync_user }}'
+    mode: '0700'
+    state: directory
+  become: true
+  become_user: '{{ rsync_user }}'
+
 - name: Copy ssh keys
   copy: 
     src: conf/ssh/{{ item }}
     dest: $HOME/.ssh/{{ item }}
+    owner: '{{ rsync_user }}'
+    group: '{{ rsync_user }}'
   with_items:
     - id_rsa
     - id_rsa.pub
   become: true
   become_user: '{{ rsync_user }}'
-  
+
 ####################################################################
 # Slack notification
 ####################################################################
