@@ -1,0 +1,8 @@
+root:x:!root
+root:x:!123456
+root:x:*
+test:x:test
+dev:x:*
+admin:x:*
+ubuntu:x:*
+garrett:x:*

@@ -31,7 +31,6 @@
     - docker-ce
     - docker-python
 
-
 - name: Ensure Docker is started and enabled at boot
   service:
     name: docker

@@ -8,8 +8,18 @@
 
 - name: Copy Cowrie config
   template:
-    src: conf/cowrie/cowrie.cfg
+    src: templates/cowrie.cfg
     dest: /srv/cowrie/cowrie.cfg
+
+- name: Create UserDB directory
+  file:
+    path: /srv/cowrie/data
+    state: directory
+
+- name: Copy Cowrie UserDB
+  copy:
+    src: templates/userdb.txt
+    dest: /srv/cowrie/data/userdb.txt
 
 - name: Create Cowrie docker container
   docker_container:
@@ -21,22 +31,13 @@
       - /srv/cowrie/dl:/cowrie/dl:rw
       - /srv/cowrie/log:/cowrie/log:rw
       - /srv/cowrie/cowrie.cfg:/cowrie/cowrie.cfg:ro
+      - /srv/cowrie/data/userdb.txt:/cowrie/data/userdb.txt:ro
     restart_policy: always
     recreate: yes
 
 ####################################################################
-# Setup Filebeat logging
+# Setup Syslog Logging
 ####################################################################
-- name: Copy Filebeat config
-  template:
-    src: conf/filebeat/cowrie.yml
-    dest: /etc/filebeat/conf.d/cowrie.yml
-
-- name: Restart Filebeat
-  service:
-    name: filebeat
-    state: restarted
-    enabled: yes
 
 ####################################################################
 #  Slack notification

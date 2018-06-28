@@ -1,3 +1,3 @@
 ##################### Honeypot settings #####################
-cowrie_hostname: qa-testserver-01
+cowrie_hostname: devserver
 cowrie_ssh_version: OpenSSH_7.6p1, LibreSSL 2.6.2
