@@ -10,9 +10,10 @@
     - docker-common
     - docker-engine
 
-- name: Run the equivalent of "apt-get update" as a separate step
+- name: apt-get update
   apt:
     update_cache: yes
+  become: yes
 
 - name: Install Docker required software
   package:
@@ -36,7 +37,7 @@
     repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial xerus stable
     state: present
 
-- name: Run the equivalent of "apt-get update" as a separate step
+- name: apt-get update
   apt:
     update_cache: yes
 
@@ -58,20 +59,11 @@
     state: started
     enabled: yes
 
-####################################################################
-# Add cowrie to syslog
-####################################################################
-- name: Configure rsyslog
-  copy:
-    src: conf/cowrie/85-graylog.conf
-    dest: /etc/rsyslog.d/85-graylog.conf
-    owner: root
-    group: root
-
-- name: Restart rsyslog
-  service:
-    name: rsyslog
-      state: restarted
+- name: Add user to Docker group
+  user:
+    name: {{ ansible_ssh_user }}
+    groups: docker
+    append: yes
 
 ####################################################################
 #  Slack notification

@@ -1,0 +1,14 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+    key_name: aws-honeystash
+    group_name: honeystash
+    ami_name: "ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20180306"
+
+  tasks:
+    - include_tasks: roles/honeypots/create_sensor.yml
+      with_items:
+        - "eu-central-1"
+      loop_control:
+        loop_var: "region"

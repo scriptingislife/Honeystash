@@ -1,0 +1,118 @@
+####################################################################
+# Setup cowrie on a VM or baremetal server, not a container.
+####################################################################
+- name: Change hostname
+  hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: apt-get update
+  apt:
+    update_cache: yes
+
+- name: Install cowrie dependencies
+  package:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - git
+    - python-virtualenv
+    - libssl-dev
+    - libffi-dev
+    - build-essential
+    - libpython-dev
+    - python2.7-minimal
+    - authbind
+
+- name: Create cowrie user
+  user:
+    name: cowrie
+
+- name: Clone the cowrie repository
+  git:
+    repo: https://github.com/micheloosterhof/cowrie.git
+    dest: /home/cowrie/cowrie
+  become: yes
+  become_user: cowrie
+
+- name: Create a virtualenv
+  command: virtualenv /home/cowrie/cowrie/cowrie-env -p python2.7 creates="/home/cowrie/cowrie/cowrie-env"
+  become: yes
+  become_user: cowrie
+
+- name: Install python dependencies with pip
+  pip:
+    requirements: /home/cowrie/cowrie/requirements.txt
+    virtualenv: /home/cowrie/cowrie/cowrie-env
+    virtualenv_python: python2.7
+    extra_args: --upgrade
+
+- name: Copy Cowrie config
+  template:
+    src: templates/cowrie.cfg
+    dest: /home/cowrie/cowrie/cowrie.cfg
+  become: yes
+  become_user: cowrie
+
+- name: Copy UserDB file
+  copy:
+    src: templates/userdb.txt
+    dest: /home/cowrie/cowrie/data/userdb.txt
+
+- name: Redirect cowrie port 2222 to port 22
+  iptables:
+    table: nat
+    chain: PREROUTING
+    protocol: tcp
+    destination_port: 22
+    jump: REDIRECT
+    to_ports: 2222
+
+- name: Redirect cowrie port 2223 to port 23
+  iptables:
+    table: nat
+    chain: PREROUTING
+    protocol: tcp
+    destination_port: 23
+    jump: REDIRECT
+    to_ports: 2223
+
+- name: Copy rsyslog template
+  template:
+    src: templates/85-graylog.conf
+    dest: /etc/rsyslog.d/85-graylog.conf
+
+- name: Enable and restart rsyslog
+  service:
+    name: rsyslog
+    state: restarted
+    enabled: yes
+
+- name: Create systemd config
+  copy:
+    src: templates/cowrie.service
+    dest: /etc/systemd/system/cowrie.service
+
+- name: Enable and start cowrie service
+  service:
+    name: cowrie
+    state: started
+    enabled: yes
+
+- name: Check if cowrie.log has been created
+  stat:
+    path: /home/cowrie/cowrie/log/cowrie.log
+  register: cowrie_log
+
+- name: Send slack notification when cowrie setup completes
+  slack:
+    token: "{{ slack_token }}"
+    msg: '{{ ansible_nodename }}:{{ ansible_default_ipv4.address }} - Successfully started Cowrie'
+    channel: "{{ slack_channel }}"
+  when: slack_token != None and cowrie_log.stat.exists
+
+- name: Send slack notification when cowrie setup fails
+  slack:
+    token: "{{ slack_token }}"
+    msg: '{{ ansible_nodename }}:{{ ansible_default_ipv4.address }} - Cowrie was not started successfully.'
+    channel: "{{ slack_channel }}"
+  when: slack_token != None and cowrie_log.stat.exists == False

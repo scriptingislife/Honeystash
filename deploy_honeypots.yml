@@ -1,13 +1,8 @@
 - hosts: cowrie
   become: yes
-  become_user: root
+  vars:
+    ansible_port: 22
   tasks:
-    # Install Docker
-    - import_tasks: roles/honeypots/setup_docker_centos.yml
-      when: ansible_os_family == 'RedHat'
-    - import_tasks: roles/honeypots/setup_docker_ubuntu.yml
-      when: ansible_os_family == 'Debian'
+    - import_tasks: roles/honeypots/change_ssh_port.yml
+    - import_tasks: roles/honeypots/setup_cowrie_baremetal.yml    
 
-    # Install cowrie
-    - import_tasks: roles/honeypots/setup_cowrie.yml
-    

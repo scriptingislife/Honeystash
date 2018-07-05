@@ -1,0 +1,12 @@
+- set_fact:
+    ansible_ssh_port: 22
+- name: Change SSH port in sshd_config
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^Port'
+    line: 'Port {{ alt_ssh_port }}'
+
+- name: Restart sshd service
+  service:
+    name: sshd
+    state: restarted

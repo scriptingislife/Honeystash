@@ -1,0 +1,4 @@
+######################### Ubuntu EC2 Instance on AWS #########################
+ansible_ssh_user: ubuntu
+ansible_ssh_private_key_file: "~/.ssh/aws-honeystash"
+public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCw/c8yLrvxTbdGJ45X6VuA30H0ESFe59Wr0OqLy6Bb3DBS/1io/SqwNBGmhCsy2iPTGNqQrO+eg7+AdcwpmYNHMKbT1d9MaG8jx1TVN/PvfuUfsOxmTm8p3qFmRLfRlfaO/ihxs3YAvRgNlBIA76/xzL4fJpWcaRPAbUaR0LQQuKfyzb0LZNWCar9rbMrgFKPBIC0tzOt7CKHsuAqoEVC/HJ6XKamYGr/csThBMEBZLRSEHca3z5RcM+30wj2XjfJntAJfS/cQTGfTh95eHzOZs1d8uEo9BtiNf/WBndTQSQmIKv2YGuUUyxn/77mfKqyKPgysE0mk1dytapRVbL2f ubuntu"

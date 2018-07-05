@@ -1,10 +1,15 @@
 ####################################################################
 # Setup Cowrie docker container
 ####################################################################
+- name: Change hostname
+  hostname:
+    name: "{{ inventory_hostname }}"
+
 - name: Create Cowrie directory
   file:
     path: /srv/cowrie
     state: directory
+    group: docker
 
 - name: Copy Cowrie config
   template:
@@ -15,6 +20,7 @@
   file:
     path: /srv/cowrie/data
     state: directory
+    group: docker
 
 - name: Copy Cowrie UserDB
   copy:
@@ -24,27 +30,36 @@
 - name: Create Cowrie docker container
   docker_container:
     name: cowrie
-    image: wonderfall/cowrie
+    image: cowrie/cowrie
     ports:
     - "22:2222"
+    - "23:2223"
     volumes:
-      - /srv/cowrie/dl:/cowrie/dl:rw
-      - /srv/cowrie/log:/cowrie/log:rw
-      - /srv/cowrie/cowrie.cfg:/cowrie/cowrie.cfg:ro
-      - /srv/cowrie/data/userdb.txt:/cowrie/data/userdb.txt:ro
+      - /srv/cowrie/dl:/cowrie/cowrie-git/dl:rw
+      - /srv/cowrie/log:/cowrie/cowrie-git/log:rw
+      - /srv/cowrie/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro
+      - /srv/cowrie/data/userdb.txt:/cowrie/cowrie-git/data/userdb.txt:ro
     restart_policy: always
     recreate: yes
 
 ####################################################################
-# Setup Syslog Logging
+# Add cowrie to syslog
 ####################################################################
-
+- name: Configure rsyslog
+  template:
+    src: templates/85-graylog.conf
+    dest: /etc/rsyslog.d/85-graylog.conf
+    
+- name: Restart rsyslog
+  service:
+    name: rsyslog
+    state: restarted
 ####################################################################
 #  Slack notification
 ####################################################################
 - name: Send slack notification when done
   slack:
     token: "{{ slack_token }}"
-    msg: '{{ ansible_nodename }}:{{ ansible_default_ipv4.address }} - Finished setting up Filebeat - {{ ansible_nodename }}'
+    msg: '{{ ansible_nodename }}:{{ ansible_default_ipv4.address }} - Finished setting up Cowrie - {{ ansible_nodename }}'
     channel: "{{ slack_channel }}"
   when: slack_token != None    
