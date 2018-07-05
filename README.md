@@ -1,23 +1,5 @@
-# CloudsOfHoney
+# Honeystash
 
-## Setup
-0. cd conf/ssh
-0. ssh-keygen -f id_rsa -t rsa -C coh -N ''
-0. vim group_vars/all and set:
-    1. slack_channel
-    1. slack_token
+This is a global network of honeypots with centralized logging. The honeypots are created by running an Ansible playbook and then report back to a Graylog server.
 
-## Rsync
-
-## Flink
-
-
-## Supported operating systems
-* Ubuntu Serve 16.04
-
-## To do:
-* Set hostname
-* Secure Flink behind NGINX
-* Setup UFW firewall
-* Setup chroot for malware
-* Better way to generate SSH keys and distribute
+Thanks to @CptOfEvilMinions for the initial idea and base Ansible files.
