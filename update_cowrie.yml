@@ -1,0 +1,28 @@
+- hosts: cowrie
+  become: yes
+  become_user: cowrie
+  vars:
+    - git_email: honeystash@scriptingis.life
+    - git_user:  honeystash
+
+  tasks:
+    - name: Configure git email
+      command: git config --global user.email "\"{{ git_email }}\""
+
+    - name: Configure git username
+      command: git config --global user.name "\"{{ git_user }}\""
+
+    - name: Stash local changes
+      command: git stash
+      args:
+        chdir: "/home/cowrie/cowrie"
+
+    - name: Pull new version
+      command: git pull
+      args:
+        chdir: "/home/cowrie/cowrie"
+
+    - name: Merge back changed files
+      command: git stash pop
+      args:
+        chdir: "/home/cowrie/cowrie"

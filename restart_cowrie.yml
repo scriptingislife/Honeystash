@@ -1,0 +1,8 @@
+- hosts: cowrie
+  become: yes
+
+  tasks:
+    - name: Restart cowrie service
+      service:
+        name: cowrie
+        state: restarted

@@ -1,0 +1,12 @@
+- hosts: cowrie
+  vars:
+    filename: templates/userdb.txt
+    to: /home/cowrie/cowrie/data/userdb.txt
+  
+  tasks:
+    - name: "Copy file to host"
+      template:
+        src: "{{ filename }}"
+        dest: "{{ to }}"
+      become: yes
+      become_user: cowrie
