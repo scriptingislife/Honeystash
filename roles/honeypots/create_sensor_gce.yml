@@ -1,0 +1,29 @@
+---
+- name: Create sensor
+  gce:
+    credentials_file: '~/.config/gce/honeystash-ansible.json'
+    project_id: '{{ project_id }}'
+    service_account_email: '{{ service_email }}'
+    name: 'honeystash-gce'
+    zone: '{{ region }}'
+    machine_type: f1-micro
+    image: 'ubuntu-1604-xenial-v20180612'
+    tags:
+      - honeystash
+    state: present
+  register: sensor
+
+
+- name: Add sensor to hosts file
+  add_host:
+    hostname: "honeystash-gce-{{ region }}"
+    ansible_ssh_host: "{{ sensor.instance_data[0].public_ip }}"
+    ansible_ssh_port: "{{ ansible_ssh_port }}"
+
+
+- name: Send Slack notification when complete
+  slack:
+    token: "{{ slack_token }}"
+    msg: 'Created new GCE sensor in {{ region }} at {{ sensor.instance_data[0].public_ip }}'
+    channel: "{{ slack_channel }}"
+  when: sensor.instance_data[0].public_ip != None and slack_token is defined

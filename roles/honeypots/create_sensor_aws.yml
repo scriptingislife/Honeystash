@@ -1,0 +1,54 @@
+---
+- name: Create key
+  ec2_key:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    region: "{{ region }}"
+    name: "{{ key_name }}"
+    key_material: {{ public_key }}
+
+- name: Create security group
+  ec2_group:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    name: " {{ group_name }}"
+    description: "Honeystash sensor"
+    region: "{{ region }}"
+    rules:
+      - proto: tcp
+        ports:
+          - 22
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        ports:
+          - 2221
+        cidr_ip: 99.0.0.0/8
+  register: sec_group
+
+- name: Find AMI ID for region
+  ec2_ami_find:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    region: "{{ region }}"
+    is_public: yes
+    name: "{{ ami_name }}"
+  register: ami_find
+
+- name: Create VPC
+  ec2:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    region: "{{ region }}"
+    key_name: "{{ key_name }}"
+    instance_type: t2.nano
+    image: "{{ ami_find.results[0].ami_id }}"
+    group_id: "{{ sec_group.group_id }}"
+    wait: yes
+  register: sensor
+
+- name: Send slack notification when cowrie setup completes
+  slack:
+    token: "{{ slack_token }}"
+    msg: 'Created new AWS sensor in {{ region }} at {{ sensor.instances[0].public_ip }}'
+    channel: "{{ slack_channel }}"
+  when: sensor.instances[0].public_ip != None and slack_token is defined

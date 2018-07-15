@@ -1,0 +1,29 @@
+##################### SSH Settings ###########################
+ansible_ssh_port: 2221
+ansible_python_interpreter: /usr/bin/python3
+timeout: 30
+
+##################### Hostnames and Domains #####################
+honeystash_ip: 
+honeystash_port: 
+
+##################### Slack #####################
+slack_channel: 
+slack_token: 
+
+##################### Timezone #####################
+timezone: America/New_York
+
+##################### Cert generation #####################
+cert_country: US 
+cert_state: NY
+cert_local: New York
+cert_org: Ur mum
+
+##################### AWS Access #######################
+aws_access_key: 
+aws_secret_key: 
+
+#################### GCE Access #######################
+service_email: 
+project_id: 

@@ -8,7 +8,10 @@
 
   tasks:
     - include_tasks: roles/honeypots/create_sensor_aws.yml
-      with_items:
-        - "eu-central-1"
-      loop_control:
-        loop_var: "region"
+      when: region is defined and platform == "aws"
+
+    - include_tasks: roles/honeypots/create_sensor_gce.yml
+      when: region is defined and platform == "gce"
+
+    - include_tasks: roles/honeypots/setup_cowrie_baremental.yml
+      when: sensor is defined
